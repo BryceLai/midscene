@@ -1,0 +1,25 @@
+{
+  "name": "@midscene/webview-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/main.mjs",
+    "start:local-s3": "node --env-file-if-exists=.env --env-file=.env.local-s3 src/main.mjs",
+    "local-s3:up": "node scripts/local-s3.mjs up",
+    "local-s3:down": "node scripts/local-s3.mjs down",
+    "demo": "node --env-file-if-exists=.env --env-file-if-exists=.env.local-s3 scripts/demo.mjs",
+    "test": "node --test test/*.test.mjs",
+    "build": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1150.0",
+    "@aws-sdk/s3-request-presigner": "3.1150.0",
+    "@midscene/web": "workspace:*",
+    "playwright": "1.64.0",
+    "yazl": "^3.3.1"
+  }
+}

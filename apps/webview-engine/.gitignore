@@ -1,0 +1,6 @@
+.env
+!.env.example
+.env.local-s3
+.dev-s3/
+data/
+midscene_run/

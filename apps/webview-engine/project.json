@@ -1,0 +1,14 @@
+{
+  "name": "@midscene/webview-engine",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "command": "pnpm test", "cwd": "apps/webview-engine" }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "options": { "command": "pnpm build", "cwd": "apps/webview-engine" }
+    }
+  }
+}
