@@ -15,18 +15,33 @@ await mkdir(output, { recursive: true, mode: 0o700 });
 const startUrl =
   process.env.DEMO_START_URL ??
   'https://movie-cui.paas.cmbchina.com/movie.html?_urlrefer=menu&showtopbar=false&DeviceType=E&Version=14.4.5&SystemVersion=11&behavior_entryid=stp003008';
+const request = {
+  startUrl,
+  objective:
+    '浏览当前电影列表，向下滚动一次以采集更多可见内容，然后结束。只收集浏览信息。',
+  limits: { maxSteps: 1, maxPages: 3, timeoutSeconds: 180 },
+};
 const submitted = await fetch(`${base}/v1/tasks`, {
   method: 'POST',
   headers,
-  body: JSON.stringify({
-    startUrl,
-    objective:
-      '浏览当前电影列表，向下滚动一次以采集更多可见内容，然后结束。只收集浏览信息。',
-    limits: { maxSteps: 2, maxPages: 3, timeoutSeconds: 180 },
-  }),
+  body: JSON.stringify(request),
 });
 const created = await submitted.json();
 if (!submitted.ok) throw new Error(JSON.stringify(created));
+await writeFile(
+  path.join(output, `${created.taskId}.submission.json`),
+  JSON.stringify(
+    {
+      submittedAt: new Date().toISOString(),
+      httpStatus: submitted.status,
+      request,
+      response: created,
+    },
+    null,
+    2,
+  ),
+  { mode: 0o600 },
+);
 console.log(`Task created: ${created.taskId}`);
 let previous;
 const deadline = Date.now() + 360000;

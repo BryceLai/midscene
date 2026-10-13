@@ -86,3 +86,40 @@ test('探索循环：防止重复动作并保存最后一个预算内动作后�
   assert.equal(limited.stopReason, 'step-budget');
   assert.equal(snapshots, 4);
 });
+
+test('探索统计：动作预算结束后仍统计最终页面状态', async () => {
+  const evidence = writer();
+  let navigated = false;
+  const result = await explore({
+    task: {
+      request: { objective: 'collect', limits: { maxSteps: 1, maxPages: 3 } },
+    },
+    driver: {
+      async snapshot() {
+        return {
+          url: navigated
+            ? 'https://example.test/detail'
+            : 'https://example.test',
+          text: navigated ? 'detail content' : 'home content',
+          controls: [],
+        };
+      },
+      async decide() {
+        return { action: 'scroll', summary: 'inspect', reason: 'collect' };
+      },
+      async act() {
+        navigated = true;
+      },
+    },
+    writer: evidence,
+    config,
+  });
+  assert.equal(result.steps, 1);
+  assert.equal(result.pagesVisited, 2);
+  assert.equal(result.statesVisited, 2);
+  const final = evidence.events.find(
+    (e) => e.type === 'page-observed' && e.data.final,
+  );
+  assert.ok(final.data.stateId);
+  assert.equal(final.data.url, 'https://example.test/detail');
+});

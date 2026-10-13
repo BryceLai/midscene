@@ -12,6 +12,7 @@ import {
 } from './domain.mjs';
 import { NetworkCollector } from './evidence.mjs';
 import { explorationPrompt } from './explorer.mjs';
+import { launcherCandidates } from './pages.mjs';
 
 export class AndroidWebviewDriver {
   constructor(config, directory, writer) {
@@ -57,15 +58,11 @@ export class AndroidWebviewDriver {
       await delay(500);
       initial = await this.pages();
     }
-    let candidates = this.config.launcherUrlPrefix
-      ? initial.filter((p) => p.url().startsWith(this.config.launcherUrlPrefix))
-      : initial.filter((p) => !/^(about:|data:)/.test(p.url()));
-    if (!this.config.launcherUrlPrefix && candidates.length > 1) {
-      const exact = candidates.filter((p) => p.url() === task.request.startUrl);
-      const local = candidates.filter((p) => p.url().startsWith('file:'));
-      if (exact.length === 1) candidates = exact;
-      else if (local.length === 1) candidates = local;
-    }
+    const candidates = await launcherCandidates(
+      initial,
+      this.config.launcherUrlPrefix,
+      task.request.startUrl,
+    );
     if (!candidates.length)
       throw new EngineError(
         'APP_WEBVIEW_UNAVAILABLE',
@@ -216,6 +213,45 @@ export class AndroidWebviewDriver {
   }
   async snapshot(index) {
     await this.refresh();
+    try {
+      // A new SPA document can be discoverable before its initial UI renders.
+      await this.page.waitForFunction(
+        () => {
+          if (document.readyState === 'loading' || !document.body) return false;
+          if (document.body.innerText?.trim()) return true;
+          return Array.from(document.querySelectorAll('img,canvas,svg')).some(
+            (el) => {
+              const rect = el.getBoundingClientRect();
+              return (
+                rect.width > 0 &&
+                rect.height > 0 &&
+                rect.top < innerHeight &&
+                rect.bottom > 0 &&
+                (el.tagName !== 'IMG' || (el.complete && el.naturalWidth > 0))
+              );
+            },
+          );
+        },
+        undefined,
+        { timeout: 15000 },
+      );
+    } catch {
+      throw new EngineError(
+        'PAGE_NOT_READY',
+        '页面在等待期限内未呈现可采集内容',
+      );
+    }
+    // Initial SPA chrome can render before its data requests finish. A busy
+    // page remains collectable, but record when this bounded settle wait expires.
+    await this.page
+      .waitForLoadState('networkidle', { timeout: 15000 })
+      .catch(() =>
+        this.writer.emit('capture-gap', {
+          source: 'page-settle',
+          snapshotIndex: index,
+          reason: 'network-still-busy',
+        }),
+      );
     const state = await this.readSnapshot();
     this.lastState = state;
     const snapshots = path.join(this.directory, 'snapshots');

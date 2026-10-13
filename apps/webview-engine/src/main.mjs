@@ -12,7 +12,7 @@ await mkdir(config.dataDir, { recursive: true, mode: 0o700 });
 const store = new TaskStore(path.join(config.dataDir, 'tasks.sqlite'));
 store.acquire();
 store.recover();
-const storage = new S3Storage(config);
+const storage = new S3Storage(config.s3);
 const worker = new Worker({ config, store, storage });
 const server = createApi({ config, store, storage, wake: () => worker.wake() });
 server.requestTimeout = 30000;

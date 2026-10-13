@@ -61,7 +61,7 @@ https://cmbls/functionjump?action=gocorpno&corpno=001003&cmb_app_trans_parms_sta
 
 这里 `corpno` 是小程序应用号。`cmbls` 是 APP 路由入口；实际 H5 页面 URL 可以不同。入口触发后，服务等待新 WebView 或导航后文档，按 `CMB_WEBVIEW_HOSTS` 和可选 `expectedWebviewUrlPrefix` 匹配。没有出现可唯一确认的目标页面时任务失败，避免采集其他页面。
 
-该方式依赖具体 APP 版本的导航拦截实现，不能仅凭入口 URL 赋值成功断言已打开小程序。若应用在后台，应先让它进入前台；若有多个起始 WebView，配置 `CMB_LAUNCHER_URL_PREFIX`。若 APP 需要测试工具或专用 JSBridge 打开入口，替换 `driver.mjs` 的 `connect` 中打开适配逻辑，再用真实设备验证。原生页面、登录、解锁和设备重连目前由运行环境准备。
+该方式依赖具体 APP 版本的导航拦截实现，不能仅凭入口 URL 赋值成功断言已打开小程序。若应用在后台，应先让它进入前台。重复入口 URL 中会优先选取唯一可见文档；无法消除歧义时任务失败，可配置 `CMB_LAUNCHER_URL_PREFIX` 缩小入口范围。若 APP 需要测试工具或专用 JSBridge 打开入口，替换 `driver.mjs` 的 `connect` 中打开适配逻辑，再用真实设备验证。原生页面、登录、解锁和设备重连目前由运行环境准备。
 
 ## 两个 API
 
@@ -129,7 +129,7 @@ pnpm local-s3:down
 
 bucket 为 `midscene-webview-test`，凭据需要签名访问。此 Compose 是本机测试环境，迁移到正式存储时替换 `.env` 中的 S3 配置。网关行为参考 [SeaweedFS S3 官方说明](https://github.com/seaweedfs/seaweedfs/wiki/Amazon-S3-API)。
 
-`pnpm demo` 使用 2 步、3 页、180 秒的测试预算，下载 ZIP 后比对 SHA-256，默认保存到 `data/downloads/`。可通过 `DEMO_API_URL`、`DEMO_START_URL` 和 `DEMO_OUTPUT_DIR` 调整测试配置。
+`pnpm demo` 使用 1 步、3 页、180 秒的测试预算，保存 POST 回执和最终任务状态，下载 ZIP 后比对 SHA-256，默认保存到 `data/downloads/`。保存的状态文件省略临时下载签名。可通过 `DEMO_API_URL`、`DEMO_START_URL` 和 `DEMO_OUTPUT_DIR` 调整测试配置。
 
 ## 探索与证据
 

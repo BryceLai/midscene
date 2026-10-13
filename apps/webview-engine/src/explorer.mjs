@@ -82,7 +82,14 @@ export async function explore({
   if (steps === task.request.limits.maxSteps) {
     const final = await driver.snapshot(steps);
     urls.add(final.url);
+    const stateId = fingerprint({
+      url: final.url,
+      text: final.text,
+      controls: final.controls,
+    });
+    states.add(stateId);
     writer.emit('page-observed', {
+      stateId,
       url: final.url,
       snapshotIndex: steps,
       final: true,
